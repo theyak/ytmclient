@@ -1,0 +1,6 @@
+.vscode/
+build/
+debug/
+coverage/
+node_modules/
+test.ts
