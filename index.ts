@@ -103,8 +103,20 @@ export class YtmClient {
 		return await this.library.getPlaylists(limit);
 	}
 
-	async getPlaylist(id: string): Promise<any[]> {
-		return await this.playlist.getTracks(id);
+	/**
+	 * Returns a list of playlist items
+	 *
+	 * @param id ID of playlist
+	 * @param limit How many songs to return. 0 retrieves them all. Default: all
+	 * @param related Whether to fetch 10 related playlists or not. Default: false
+	 * @param suggestionsLimit  How many suggestions to return. Default 0
+	 * @returns
+	 */
+	async getPlaylist(id: string, limit: number = 0, related: boolean = false, suggestionsLimit: number = 0): Promise<any> {
+
+		const tracks = await this.playlist.getTracks(id);
+		return tracks;
+
 	}
 
 	async createPlaylist(): Promise<boolean> {

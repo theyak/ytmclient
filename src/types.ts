@@ -58,11 +58,15 @@ export type Track = {
 	thumbnails?: Thumbnail[],
 
 	/**
-	 * This can maybe mean one of two things:
-	 *  - Sometimes the labels revoke the license for YouTube to play music and we get sad.
-	 *  - The video isn't a song, or at least YouTube doesn't think it is, so it's not available in YouTube Music.
+	 * The video isn't a song, or at least YouTube doesn't think it is, so it's not available in YouTube Music.
+	 * It could also mean the video is unlicensed.
 	 */
 	isAvailable?: boolean,
+
+	/**
+	 * Flag indicating if track is licensed.
+	 */
+	isLicensed?: boolean,
 
 	/**
 	 * Naughty naughty singer!
@@ -89,6 +93,12 @@ export type Track = {
 	 * or a library, or both. I dunno.
 	 */
 	feedbackTokens?: {add: string, remove: string},
+
+	/**
+	 * A unique ID of this the track that is needed for adding
+	 * or removing the track from a particular playlist.
+	 */
+	setVideoId?: string;
 };
 
 export type Album = {

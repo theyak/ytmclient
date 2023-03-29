@@ -1,6 +1,7 @@
 import { YtmClient } from "..";
 import { Track, Album, Artist, LikeStatus } from "./types";
 import { parseDuration, nav } from "./utils";
+import * as util from "util";
 
 export default class Playlist {
 	client: YtmClient;
@@ -9,7 +10,7 @@ export default class Playlist {
 		this.client = client;
 	}
 
-	async getTracks(browseId: string, continueToken?: string): Promise<any[]> {
+	async getTracks(browseId: string, continueToken?: string): Promise<any> {
 
 		if (!browseId.toUpperCase().startsWith("VL")) {
 			browseId = "VL" + browseId;
@@ -26,9 +27,14 @@ export default class Playlist {
 
 		const additional = continueToken ? `ctoken=${continueToken}&continuation=${continueToken}` : "";
 		const response = await this.client.sendAuthorizedRequest("browse", body, additional);
+
+		const meta = this.parsePlaylistResponse(browseId, response);
 		const tracks = this.parseTrackResponse(response);
 
-		return tracks;
+		return {
+			...meta,
+			tracks
+		};
 	}
 
 	async create(): Promise<boolean> {
@@ -37,6 +43,58 @@ export default class Playlist {
 
 	async addTracks(): Promise<boolean> {
 		return true;
+	}
+
+	parsePlaylistResponse(id: string, response: any): any {
+		const isOwnPlaylist = !!nav(response, "header.musicEditablePlaylistDetailHeaderRenderer");
+
+		let privacy = "";
+		let header = {};
+		if (isOwnPlaylist) {
+			header = nav(response, "header.musicEditablePlaylistDetailHeaderRenderer.header.musicDetailHeaderRenderer");
+			privacy = nav(response, "header.musicEditablePlaylistDetailHeaderRenderer.editHeader.musicPlaylistEditHeaderRenderer.privacy");
+		} else {
+			header = nav(response, "header.musicDetailHeaderRenderer");
+			privacy = "PUBLIC";
+		}
+
+        const runCount = nav(header, "subtitle.runs").length;
+		let author = {};
+		if (runCount > 1) {
+			author = {
+				id: nav(header, "subtitle.runs.2.navigationEndpoint.browseEndpoint.browseId"),
+				name: nav(header, "subtitle.runs.2.text"),
+			}
+		}
+		const year = runCount === 5 ? nav(header, "subtitle.runs.4.text") : "";
+
+		let trackCount = 0;
+		let views = 0;
+		let duration = "";
+		if (isOwnPlaylist) {
+			trackCount = parseInt(nav(header, "secondSubtitle.runs.2.text"));
+			views = parseInt(nav(header, "secondSubtitle.runs.0.text"));
+			duration = nav(header, "secondSubtitle.runs.4.text");
+		} else {
+			trackCount = parseInt(nav(header, "secondSubtitle.runs.0.text"));
+			duration = nav(header, "secondSubtitle.runs.2.text");
+		}
+
+		const meta = {
+			id,
+			title: nav(header, "title.runs.0.text"),
+			privacy,
+			description: nav(header, "description.runs.0.text"),
+			thumbnails: nav(header, "thumbnail.croppedSquareThumbnailRenderer.thumbnail.thumbnails"),
+			isOwnPlaylist,
+			author,
+			year,
+			trackCount,
+			views,
+			duration,
+		};
+
+		return meta;
 	}
 
 	parseTrackResponse(response: any): any {
@@ -61,8 +119,7 @@ export default class Playlist {
 				if (!renderer) {
 					continue;
 				}
-
-				const menu = renderer.menu.menuRenderer;
+				const menu = renderer.menu?.menuRenderer;
 				const fixed = renderer.fixedColumns;
 				const flex = renderer.flexColumns;
 				const overlay = renderer.overlay.musicItemThumbnailOverlayRenderer;
@@ -77,19 +134,22 @@ export default class Playlist {
 				// Go through menu items - I'm not really sure what this is for but it's in sigma67/ytmusicapi
 				// so I'm keeping it in. I can see that it does set the videoId attribute for videos
 				// that aren't available.
-				for (let i = 0; i < menu.items.length; i++) {
-					const item = menu.items[i];
-					setVideoId = nav(item, "menuServiceItemRenderer.serviceEndpoint.playlistEditEndpoint.actions.0.setVideoId");
-					videoId = nav(item, "menuServiceItemRenderer.serviceEndpoint.playlistEditEndpoint.actions.0.removedVideoId");
-					if (item.toggleMenuServiceItemRenderer) {
-						const toggle = item.toggleMenuServiceItemRenderer;
-						const serviceType = toggle.defaultIcon?.iconType;
-						let addToken = toggle.defaultServiceEndpoint?.feedbackEndpoint?.feedbackTokens;
-						let removeToken = toggle.toggledServiceEndpoint?.feedbackEndpoint?.feedbackTokens;
-						if (serviceType === "LIBRARY_REMOVE") {
-							feedbackTokens = {add: removeToken, remove: addToken};
-						} else {
-							feedbackTokens = {add: addToken, remove: removeToken};
+
+				if (menu) {
+					for (let i = 0; i < menu.items.length; i++) {
+						const item = menu.items[i];
+						setVideoId = nav(item, "menuServiceItemRenderer.serviceEndpoint.playlistEditEndpoint.actions.0.setVideoId");
+						videoId = nav(item, "menuServiceItemRenderer.serviceEndpoint.playlistEditEndpoint.actions.0.removedVideoId");
+						if (item.toggleMenuServiceItemRenderer) {
+							const toggle = item.toggleMenuServiceItemRenderer;
+							const serviceType = toggle.defaultIcon?.iconType;
+							let addToken = toggle.defaultServiceEndpoint?.feedbackEndpoint?.feedbackTokens;
+							let removeToken = toggle.toggledServiceEndpoint?.feedbackEndpoint?.feedbackTokens;
+							if (serviceType === "LIBRARY_REMOVE") {
+								feedbackTokens = {add: removeToken, remove: addToken};
+							} else {
+								feedbackTokens = {add: addToken, remove: removeToken};
+							}
 						}
 					}
 				}
@@ -129,6 +189,7 @@ export default class Playlist {
 
 				// Available?
 				const isAvailable = renderer.musicItemRendererDisplayPolicy !== "MUSIC_ITEM_RENDERER_DISPLAY_POLICY_GREY_OUT";
+				const isLicensed = !!menu;
 
 				// Explicit?
 				const isExplicit = !!nav(renderer, "badges.0.musicInlineBadgeRenderer.accessibilityData.accessibilityData.label");
@@ -140,7 +201,7 @@ export default class Playlist {
 				}
 
 				// Video type
-				let videoType:string|undefined = nav(menu, `
+				let videoType:string|undefined = menu && nav(menu, `
 					items.0.
 					menuNavigationItemRenderer.
 					navigationEndpoint.
@@ -158,14 +219,15 @@ export default class Playlist {
 					likeStatus,
 					thumbnails,
 					isAvailable,
+					isLicensed,
 					isExplicit,
 					videoType,
 					duration,
 					durationSeconds: parseDuration(duration),
 					feedbackTokens,
+					setVideoId,
 				};
 				tracks.push(track);
-				// console.log(track);
 			}
 		}
 
