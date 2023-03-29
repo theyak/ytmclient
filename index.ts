@@ -103,8 +103,8 @@ export class YtmClient {
 		return await this.library.getPlaylists(limit);
 	}
 
-	async getPlaylist(): Promise<boolean> {
-		return await this.playlist.getTracks();
+	async getPlaylist(id: string): Promise<any[]> {
+		return await this.playlist.getTracks(id);
 	}
 
 	async createPlaylist(): Promise<boolean> {
