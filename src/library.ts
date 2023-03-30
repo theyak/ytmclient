@@ -1,5 +1,5 @@
 import { YtmClient } from "..";
-import { IPlaylist } from "./types";
+import { PlaylistItem } from "./types";
 
 export default class Library {
 	client: YtmClient;
@@ -8,8 +8,8 @@ export default class Library {
 		this.client = client;
 	}
 
-	async getPlaylists(limit?: number): Promise<IPlaylist[]> {
-		let lists:IPlaylist[] = [];
+	async getPlaylists(limit?: number): Promise<PlaylistItem[]> {
+		let lists:PlaylistItem[] = [];
 		const body = { browseId: "FEmusic_liked_playlists" };
 		const response = await this.client.sendAuthorizedRequest("browse", body);
 		const obj = response.
@@ -46,7 +46,7 @@ export default class Library {
 					title: item?.musicTwoRowItemRenderer?.title?.runs[0]?.text,
 					thumbnails: item?.musicTwoRowItemRenderer?.thumbnailRenderer?.musicThumbnailRenderer?.thumbnail?.thumbnails,
 					count,
-				};
+				} as PlaylistItem;
 			});
 		}
 

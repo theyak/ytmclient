@@ -2,7 +2,7 @@ import { createHash } from "crypto";
 import axios from "axios";
 import Library from "./src/library";
 import Playlist from "./src/playlist";
-import { IPlaylist } from "./src/types";
+import { PlaylistItem, Track } from "./src/types";
 
 export const YTM_DOMAIN = "https://music.youtube.com";
 export const YTM_BASE_API = "https://music.youtube.com/youtubei/v1/";
@@ -59,7 +59,7 @@ export class YtmClient {
 
 	async sendAuthorizedRequest(endpoint: string, body: Record<string, any>, additional:string = ""): Promise<any> {
 		const headers = this.getHeaders();
-		const url = `${YTM_BASE_API}${endpoint}${YTM_QUERY_PARAMS}${additional}`;
+		const url = `${YTM_BASE_API}${endpoint}${YTM_QUERY_PARAMS}&${additional}`;
 		const reqBody = JSON.stringify({...body, ...getContext()});
 
 		const response = await axios.post(
@@ -99,7 +99,7 @@ export class YtmClient {
 	 *     count: number
 	 * }
 	 */
-	async getLibraryPlaylists(limit?: number): Promise<IPlaylist[]> {
+	async getLibraryPlaylists(limit?: number): Promise<PlaylistItem[]> {
 		return await this.library.getPlaylists(limit);
 	}
 
@@ -108,15 +108,38 @@ export class YtmClient {
 	 *
 	 * @param id ID of playlist
 	 * @param limit How many songs to return. 0 retrieves them all. Default: all
-	 * @param related Whether to fetch 10 related playlists or not. Default: false
-	 * @param suggestionsLimit  How many suggestions to return. Default 0
+	 * @param related Whether to fetch 10 related playlists or not. Default: false (Not implemented)
+	 * @param suggestionsLimit  How many suggestions to return. Default 0 (Not implemented)
 	 * @returns
 	 */
 	async getPlaylist(id: string, limit: number = 0, related: boolean = false, suggestionsLimit: number = 0): Promise<any> {
+		const playlist = await this.playlist.getTracks(id);
 
-		const tracks = await this.playlist.getTracks(id);
-		return tracks;
+		// YouTube actually limits playlist lengths to 5,000, but we'll make it bigger.
+		if (limit === 0) {
+			limit = 99999999;
+		}
 
+		// Load continuations
+		while (playlist.continuation && playlist.tracks.length < limit) {
+			let next = await this.playlist.getTrackContinuations(id, playlist.continuation);
+			playlist.tracks.push(...next.tracks);
+			playlist.continuation = next.continuation;
+		}
+
+		return playlist;
+	}
+
+	/**
+	 * Returns the next (up to) 100 tracks from a playlist if not all were previously returned.
+	 *
+	 * @param id ID of playlist
+	 * @param token The continuation token from original getPlaylist call or last getPlaylistContinuations call
+	 * @returns {continuation: string|undefined, tracks: Track[]}
+	 */
+	async getPlaylistContinuations(id: string, token: string) {
+		const playlist = await this.playlist.getTrackContinuations(id, token);
+		return playlist;
 	}
 
 	async createPlaylist(): Promise<boolean> {

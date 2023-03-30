@@ -1,10 +1,26 @@
 
-export type Playlist = {
+export type PlaylistItem = {
 	playlistId: string,
 	title: string,
 	thumbnails?: Thumbnail[],
 	count?: number,
 };
+
+export type Playlist = {
+	id: string,
+	title: string,
+	privacy: string,
+	description: string,
+	thumbnails: Thumbnail[],
+	isOwnPlaylist: boolean,
+	author: string,
+	year: string,
+	trackCount: number,
+	views: 0,
+	duration: string,
+	continuation?: string,
+	tracks: Track[],
+}
 
 export type Thumbnail = {
 	/**

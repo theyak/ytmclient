@@ -1,7 +1,8 @@
 import { YtmClient } from "..";
-import { Track, Album, Artist, LikeStatus } from "./types";
+import { Playlist as PlaylistDTO, Track, Album, Artist, LikeStatus } from "./types";
 import { parseDuration, nav } from "./utils";
 import * as util from "util";
+import * as fs from "fs";
 
 export default class Playlist {
 	client: YtmClient;
@@ -10,7 +11,7 @@ export default class Playlist {
 		this.client = client;
 	}
 
-	async getTracks(browseId: string, continueToken?: string): Promise<any> {
+	async getTracks(browseId: string): Promise<PlaylistDTO> {
 
 		if (!browseId.toUpperCase().startsWith("VL")) {
 			browseId = "VL" + browseId;
@@ -24,17 +25,67 @@ export default class Playlist {
                 }
             }
         };
+		const response = await this.client.sendAuthorizedRequest("browse", body);
 
-		const additional = continueToken ? `ctoken=${continueToken}&continuation=${continueToken}` : "";
-		const response = await this.client.sendAuthorizedRequest("browse", body, additional);
+		const tracksObj: any[] = nav(response, `
+			contents.
+			singleColumnBrowseResultsRenderer.
+			tabs.0.
+			tabRenderer.
+			content.
+			sectionListRenderer.
+			contents.0.
+			musicPlaylistShelfRenderer.
+			contents
+		`);
 
 		const meta = this.parsePlaylistResponse(browseId, response);
-		const tracks = this.parseTrackResponse(response);
+		const tracks = this.parseTrackResponse(tracksObj);
 
 		return {
 			...meta,
-			tracks
+			tracks,
+			whydoesthisnotgetflagged: "hi",
 		};
+	}
+
+	async getTrackContinuations(browseId: string, continueToken: string): Promise<any> {
+		if (!browseId.toUpperCase().startsWith("VL")) {
+			browseId = "VL" + browseId;
+		}
+
+		const body = {
+            browseId,
+            browseEndpointContextSupportedConfigs: {
+                browseEndpointContextMusicConfig: {
+                    pageType: "MUSIC_PAGE_TYPE_PLAYLIST"
+                }
+            }
+        };
+
+		const additional = `ctoken=${continueToken}&continuation=${continueToken}&type=next`;
+		const response = await this.client.sendAuthorizedRequest("browse", body, additional);
+
+		const tracksObj: any[] = nav(response, `
+			continuationContents.
+			musicPlaylistShelfContinuation.
+			contents
+		`);
+
+		const continuation = nav(response, `
+			continuationContents.
+			musicPlaylistShelfContinuation.
+			continuations.0.
+			nextContinuationData.
+			continuation
+		`);
+
+		const tracks = this.parseTrackResponse(tracksObj);
+
+		return {
+			continuation,
+			tracks,
+		}
 	}
 
 	async create(): Promise<boolean> {
@@ -46,6 +97,7 @@ export default class Playlist {
 	}
 
 	parsePlaylistResponse(id: string, response: any): any {
+
 		const isOwnPlaylist = !!nav(response, "header.musicEditablePlaylistDetailHeaderRenderer");
 
 		let privacy = "";
@@ -80,6 +132,20 @@ export default class Playlist {
 			duration = nav(header, "secondSubtitle.runs.2.text");
 		}
 
+		const continuation: any[] = nav(response, `
+			contents.
+			singleColumnBrowseResultsRenderer.
+			tabs.0.
+			tabRenderer.
+			content.
+			sectionListRenderer.
+			contents.0.
+			musicPlaylistShelfRenderer.
+			continuations.0.
+			nextContinuationData.
+			continuation
+		`);
+
 		const meta = {
 			id,
 			title: nav(header, "title.runs.0.text"),
@@ -92,24 +158,14 @@ export default class Playlist {
 			trackCount,
 			views,
 			duration,
+			continuation,
 		};
 
 		return meta;
 	}
 
-	parseTrackResponse(response: any): any {
+	parseTrackResponse(obj: any): any {
 		let tracks: Track[] = [];
-		const obj: any[] = nav(response, `
-			contents.
-			singleColumnBrowseResultsRenderer.
-			tabs.0.
-			tabRenderer.
-			content.
-			sectionListRenderer.
-			contents.0.
-			musicPlaylistShelfRenderer.
-			contents
-		`);
 
 		if (obj && Array.isArray(obj)) {
 			for (let i = 0; i < obj.length; i++) {
