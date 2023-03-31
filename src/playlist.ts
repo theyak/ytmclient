@@ -3,6 +3,7 @@ import { Playlist as PlaylistDTO, Track, Album, Artist, LikeStatus } from "./typ
 import { parseDuration, nav } from "./utils";
 import * as util from "util";
 import * as fs from "fs";
+import logger from "./logger";
 
 export default class Playlist {
 	client: YtmClient;
@@ -25,7 +26,13 @@ export default class Playlist {
                 }
             }
         };
+
+		await logger("Playlist Request")
+		await logger(body);
 		const response = await this.client.sendAuthorizedRequest("browse", body);
+
+		await logger("Playlist Response");
+		await logger(response);
 
 		const tracksObj: any[] = nav(response, `
 			contents.
@@ -45,7 +52,6 @@ export default class Playlist {
 		return {
 			...meta,
 			tracks,
-			whydoesthisnotgetflagged: "hi",
 		};
 	}
 
