@@ -33,3 +33,10 @@ export function nav(obj: any, str: string, dflt: any = false): any {
 	}
 	return obj;
 }
+
+/**
+ * Delay for whatever reason
+ *
+ * @param amount Number of milliseconds to wait
+ */
+export const wait = async (amount: number): Promise<any> => new Promise(res => setTimeout(res, amount ?? 500));

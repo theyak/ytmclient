@@ -31,6 +31,12 @@ export function getAuthorization(sapisid: string, origin: string = "https://musi
 }
 
 export function getCookies(cookiesStr: string): Record<string, string> {
+	cookiesStr = cookiesStr.trim();
+
+	if (cookiesStr.length <= 0 || cookiesStr.indexOf("=") < 0) {
+		return {};
+	}
+
 	const split: string[] = cookiesStr.split(";")
 
 	const cookies:Record<string, string> = {};

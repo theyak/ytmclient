@@ -27,12 +27,7 @@ export default class Playlist {
             }
         };
 
-		await logger("Playlist Request")
-		await logger(body);
 		const response = await this.client.sendAuthorizedRequest("browse", body);
-
-		await logger("Playlist Response");
-		await logger(response);
 
 		const tracksObj: any[] = nav(response, `
 			contents.
@@ -194,7 +189,7 @@ export default class Playlist {
 				const title = nav(flex, "0.musicResponsiveListItemFlexColumnRenderer.text.runs.0.text");
 
 				// Go through menu items - I'm not really sure what this is for but it's in sigma67/ytmusicapi
-				// so I'm keeping it in. I can see that it does set the videoId attribute for videos
+				// so I'm keeping it in. I can see that it does set the videoId attribute for some videos
 				// that aren't available.
 
 				if (menu) {
