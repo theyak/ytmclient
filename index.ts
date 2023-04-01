@@ -144,15 +144,42 @@ export class YtmClient {
 	 * @returns {continuation: string|undefined, tracks: Track[]}
 	 */
 	async getPlaylistContinuations(id: string, token: string) {
-		const playlist = await this.playlist.getTrackContinuations(id, token);
-		return playlist;
+		return await this.playlist.getTrackContinuations(id, token);
 	}
 
-	async createPlaylist(): Promise<boolean> {
-		return await this.playlist.create();
+	/**
+	 * Create new playlist
+	 *
+	 * @param title Title of playlist
+	 * @param description Short description for playlist
+	 * @param privacyStatus
+	 * @param videoIds List of video ids to add to playlist
+	 *
+	 * @returns
+	 */
+	async createPlaylist(
+		title: string,
+		description: string,
+		privacyStatus: "PRIVATE"|"PUBLIC"|"UNLISTED" = "PRIVATE",
+		videoIds: string[] = [],
+	): Promise<string> {
+		return await this.playlist.create(title, description, privacyStatus, videoIds);
 	}
 
-	async addPlaylistItems(): Promise<boolean> {
-		return await this.playlist.addTracks();
+	/**
+	 * Add videos to a playlist
+	 *
+	 * @param playlistId Playlist to add to
+	 * @param videoIds List of video ids to add to playlist
+	 * @param sourcePlaylist Copy this playlist to playlistId
+	 * @param duplicates Allow duplicate tracks
+	 */
+	async addPlaylistItems(
+		playlistId: string,
+		videoIds: string[],
+		sourcePlaylist: string,
+		duplicates: boolean = false,
+	): Promise<boolean> {
+		return await this.playlist.addTracks(playlistId, videoIds, sourcePlaylist, duplicates);
 	}
 }

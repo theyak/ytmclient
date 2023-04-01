@@ -89,12 +89,85 @@ export default class Playlist {
 		}
 	}
 
-	async create(): Promise<boolean> {
-		return true;
+	/**
+	 * Create new playlist
+	 *
+	 * @returns
+	 */
+	async create(
+		title: string,
+		description: string = "",
+		privacyStatus: "PUBLIC"|"PRIVATE"|"UNLISTED" = "PRIVATE",
+		videoIds: string[] = [],
+	): Promise<string> {
+
+		if (["PUBLIC", "PRIVATE", "UNLISTED"].indexOf(privacyStatus) < 0) {
+			return "Error";
+		}
+
+		const body: any = {
+			title,
+			description,
+			privacyStatus,
+		};
+
+		if (Array.isArray(videoIds) && videoIds.length > 0) {
+			body.videoIds = videoIds;
+		}
+
+		const response = await this.client.sendAuthorizedRequest("playlist/create", body);
+
+		return response.playlistId;
 	}
 
-	async addTracks(): Promise<boolean> {
-		return true;
+	async addTracks(
+		playlistId: string,
+		videoIds: string[],
+		sourcePlaylist: string,
+		duplicates: boolean = false
+	): Promise<boolean> {
+		const body: any = {
+			playlistId,
+			actions: [],
+		}
+
+		if (Array.isArray(videoIds) && videoIds.length > 0) {
+			for (let videoId of videoIds) {
+				const action: Record<string, string> = {
+					action: "ACTION_ADD_VIDEO",
+					addedVideoId: videoId,
+				};
+				if (duplicates) {
+					action.dedupeOption = 'DEDUPE_OPTION_SKIP';
+				}
+				body.actions.push(action);
+			}
+		}
+
+		if (sourcePlaylist) {
+			const action = {
+				action: "ACTION_ADD_PLAYLIST",
+				addedFullListId: sourcePlaylist,
+			};
+			body.actions.push(action);
+
+			// add an empty ACTION_ADD_VIDEO because otherwise
+        	// YTM doesn't return the dict that maps videoIds to their new setVideoIds
+			if (!Array.isArray(videoIds) || videoIds.length <= 0) {
+				body.actions.push({
+					action: "ACTION_ADD_VIDEO",
+					addedVideoId: null,
+				});
+			}
+		}
+
+		const response = await this.client.sendAuthorizedRequest("browse/edit_playlist", body);
+
+		if (response.status === "SUCCEEDED") {
+			return true;
+		}
+
+		return false;
 	}
 
 	parsePlaylistResponse(id: string, response: any): any {
