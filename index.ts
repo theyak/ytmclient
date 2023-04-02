@@ -51,6 +51,7 @@ export function getCookies(cookiesStr: string): Record<string, string> {
 export class YtmClient {
 	cookies:string = "";
 	sapiSid:string|null = null;
+	user:string;
 	origin:string = YTM_DOMAIN;
 	playlist:Playlist;
 	library:Library;
@@ -61,6 +62,7 @@ export class YtmClient {
 		this.cookies = cookies;
 		this.playlist = new Playlist(this);
 		this.library = new Library(this);
+		this.user = user;
 	}
 
 	async sendAuthorizedRequest(endpoint: string, body: Record<string, any>, additional:string = ""): Promise<any> {
@@ -86,7 +88,7 @@ export class YtmClient {
 			Accept: '*/*',
 			'Accept-Language': 'en-US,en;q=0.5',
 			'Content-Type': 'application/json',
-			'X-Goog-AuthUser': '0',
+			'X-Goog-AuthUser': this.user,
 			'x-origin': this.origin,
 			cookie: this.cookies,
 			authorization: this.sapiSid ? getAuthorization(this.sapiSid, this.origin) : "",
