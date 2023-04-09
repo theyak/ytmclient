@@ -190,7 +190,7 @@ export class YtmClient {
 	/**
 	 * Get debug information
 	 */
-	async getDegugInformation(): Promise<Record<string, any>> {
+	async getDebugInformation(): Promise<Record<string, any>> {
 		return {
 			version: VERSION,
 			build: BUILD,
