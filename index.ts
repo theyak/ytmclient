@@ -4,6 +4,8 @@ import Library from "./src/library";
 import Playlist from "./src/playlist";
 import { PlaylistItem, Track } from "./src/types";
 
+export const VERSION = "0.0.2";
+export const BUILD = "20230408190400";
 export const YTM_DOMAIN = "https://music.youtube.com";
 export const YTM_BASE_API = "https://music.youtube.com/youtubei/v1/";
 export const YTM_QUERY_PARAMS = "?alt=json&key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30"
@@ -183,5 +185,16 @@ export class YtmClient {
 		duplicates: boolean = false,
 	): Promise<boolean> {
 		return await this.playlist.addTracks(playlistId, videoIds, sourcePlaylist, duplicates);
+	}
+
+	/**
+	 * Get debug information
+	 */
+	async getDegugInformation(): Promise<Record<string, any>> {
+		return {
+			version: VERSION,
+			build: BUILD,
+			headers: this.getHeaders(),
+		};
 	}
 }
