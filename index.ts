@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import axios from "axios";
 import Library from "./src/library";
 import Playlist from "./src/playlist";
+import Browsing from "./src/browsing";
 import { PlaylistItem, Track } from "./src/types";
 
 export const VERSION = "0.0.2";
@@ -57,6 +58,7 @@ export class YtmClient {
 	origin:string = YTM_DOMAIN;
 	playlist:Playlist;
 	library:Library;
+	browsing:Browsing;
 
 	constructor(cookies: string, user: string = "0") {
 		const c = getCookies(cookies);
@@ -64,6 +66,7 @@ export class YtmClient {
 		this.cookies = cookies;
 		this.playlist = new Playlist(this);
 		this.library = new Library(this);
+		this.browsing = new Browsing(this);
 		this.user = user;
 	}
 
@@ -185,6 +188,16 @@ export class YtmClient {
 		duplicates: boolean = false,
 	): Promise<boolean> {
 		return await this.playlist.addTracks(playlistId, videoIds, sourcePlaylist, duplicates);
+	}
+
+	/**
+	 * Returns metadata and streaming information about a song or video.
+	 *
+	 * @param videoId Video id
+	 * @returns Object with all sorts of track data. Log it to view. It's insane.
+	 */
+	 async getSong(videoId: string): Promise<any> {
+		return await this.browsing.getSong(videoId);
 	}
 
 	/**
