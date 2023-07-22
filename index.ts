@@ -82,7 +82,6 @@ export class YtmClient {
 				headers,
 			}
 		);
-
 		return response.data;
 	}
 

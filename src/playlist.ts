@@ -99,7 +99,7 @@ export default class Playlist {
 		description: string = "",
 		privacyStatus: "PUBLIC"|"PRIVATE"|"UNLISTED" = "PRIVATE",
 		videoIds: string[] = [],
-	): Promise<string> {
+	): Promise<any> {
 
 		if (["PUBLIC", "PRIVATE", "UNLISTED"].indexOf(privacyStatus) < 0) {
 			return "Error";
@@ -115,9 +115,29 @@ export default class Playlist {
 			body.videoIds = videoIds;
 		}
 
-		const response = await this.client.sendAuthorizedRequest("playlist/create", body);
-
-		return response.playlistId;
+		try {
+			const response = await this.client.sendAuthorizedRequest("playlist/create", body);
+			return {
+				success: true,
+				playlistId: response.playlistId,
+			};
+		} catch (error: any) {
+			if (error.response) {
+				return {
+					success: false,
+					error: error.response.data.error.message,
+				};
+			} else if (error.request) {
+				return {
+					success: false,
+				}
+			} else {
+				return {
+					success: false,
+					error: error.message,
+				}
+			}
+		}
 	}
 
 	async addTracks(
