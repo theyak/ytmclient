@@ -197,12 +197,15 @@ export default class Playlist {
 		let trackCount = 0;
 		let views = 0;
 		let duration = "";
-		if (isOwnPlaylist) {
-			trackCount = parseInt(nav(header, "secondSubtitle.runs.2.text"));
-			views = parseInt(nav(header, "secondSubtitle.runs.0.text"));
+
+		const runs = nav(header, "secondSubtitle.runs");
+
+		if (runs.length >= 5) {
+			trackCount = parseInt(nav(header, "secondSubtitle.runs.2.text").replace(/\D/g,''));
+			views = nav(header, "secondSubtitle.runs.0.text");
 			duration = nav(header, "secondSubtitle.runs.4.text");
 		} else {
-			trackCount = parseInt(nav(header, "secondSubtitle.runs.0.text"));
+			trackCount = parseInt(nav(header, "secondSubtitle.runs.0.text").replace(/\D/g,''));
 			duration = nav(header, "secondSubtitle.runs.2.text");
 		}
 
@@ -314,8 +317,13 @@ export default class Playlist {
 				}
 
 				// Duration
-				const durationObj = nav(fixed, "0.musicResponsiveListItemFixedColumnRenderer.text");
-				const duration = durationObj.simpleText || durationObj.runs[0].text;
+				let duration = "0";
+				if (fixed) {
+					const durationObj = nav(fixed, "0.musicResponsiveListItemFixedColumnRenderer.text");
+					if (durationObj) {
+						duration = durationObj.simpleText || durationObj.runs[0].text;
+					}
+				}
 
 				// Available?
 				const isAvailable = renderer.musicItemRendererDisplayPolicy !== "MUSIC_ITEM_RENDERER_DISPLAY_POLICY_GREY_OUT";
