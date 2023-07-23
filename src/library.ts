@@ -48,8 +48,7 @@ export default class Library {
 				} as PlaylistItem;
 			});
 
-			// TODO: Figure out how to get lots and lots of playlists. I don't have enough
-			// to figure that out.
+			// Get more playlists if there are any.
 			const continuation = nav(obj, "continuations.0.nextContinuationData.continuation", "");
 			if (continuation) {
 				const more = await this.getPlaylistsContinuation(continuation);
@@ -61,38 +60,42 @@ export default class Library {
 	}
 
 
-	async getPlaylistsContinuation(token: string): Promise<any> {
-		const response = await this.client.sendAuthorizedRequest('browse', { continuation: token });
+	async getPlaylistsContinuation(token: string): Promise<PlaylistItem[]> {
+		const lists: PlaylistItem[] = [];
 
-		const obj = nav(response, "continuationContents.gridContinuation", { items: [] });
+		while (token) {
+			const response = await this.client.sendAuthorizedRequest('browse', { continuation: token });
+			const obj = nav(response, "continuationContents.gridContinuation", { items: [], continuations: [] });
 
-		if (obj.items) {
-			const lists = obj.items.map((item: any) => {
-				// Look for count of songs which is provided via a label like "6 songs".
-				let count = 0;
-				const subtitles = item?.musicTwoRowItemRenderer?.subtitle?.runs;
-				if (Array.isArray(subtitles)) {
-					for (let i = 0; i < subtitles.length; i++) {
-						const text = subtitles[i].text.trim();
-						const match = text.match(/^([\d,]+)\s+\w+/);
-						if (match && match.length > 1) {
-							count = match[1];
-							break;
+			if (obj.items) {
+				obj.items.forEach((item: any) => {
+					// Look for count of songs which is provided via a label like "6 songs".
+					let count = 0;
+					const subtitles = item?.musicTwoRowItemRenderer?.subtitle?.runs;
+					if (Array.isArray(subtitles)) {
+						for (let i = 0; i < subtitles.length; i++) {
+							const text = subtitles[i].text.trim();
+							const match = text.match(/^([\d,]+)\s+\w+/);
+							if (match && match.length > 1) {
+								count = match[1];
+								break;
+							}
 						}
 					}
-				}
 
-				return {
-					playlistId: item?.musicTwoRowItemRenderer?.navigationEndpoint?.browseEndpoint?.browseId,
-					title: item?.musicTwoRowItemRenderer?.title?.runs[0]?.text,
-					thumbnails: item?.musicTwoRowItemRenderer?.thumbnailRenderer?.musicThumbnailRenderer?.thumbnail?.thumbnails,
-					count,
-				} as PlaylistItem;
-			});
+					const list = {
+						playlistId: item?.musicTwoRowItemRenderer?.navigationEndpoint?.browseEndpoint?.browseId,
+						title: item?.musicTwoRowItemRenderer?.title?.runs[0]?.text,
+						thumbnails: item?.musicTwoRowItemRenderer?.thumbnailRenderer?.musicThumbnailRenderer?.thumbnail?.thumbnails,
+						count,
+					} as PlaylistItem;
+					lists.push(list);
+				});
+			}
 
-			return lists;
+			token = nav(obj, "continuations.0.nextContinuationData.continuation", "");
 		}
 
-		return [];
+		return lists;
 	}
 }
