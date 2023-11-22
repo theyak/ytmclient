@@ -14,6 +14,36 @@ fetch the data in chuncks allows me to do that.
 This also gave me a chance to play with TypeScript which I haven't done much before.
 I'm sure I did a lot wrong, but it's usable.
 
+Usage:
+
+Grab your cookie value from YouTube Music by using the Developer Console -> Network tab. 
+Search for a request to the `browse` endpoint. Click on headers then scroll down until
+you see the `Cookies:` string. It will be long. Just copy that and put it into the
+`cookie` variable in the sample code below. You will also need to get your user number.
+This is often "0" if you are signed in to only one Google account, but may be a higher
+number if you are signed in to more than one Google account. To find your user number,
+look for the `X-Goog-Authuser` header in the Developer Console.
+
+```js
+import { YtmClient } from "ytmclient";
+
+async function run() {
+        const cookie = "...insert cookie value here...";
+        const user = "0"; // Change this to the value of the X-Goog-Authuser header in YouTube Music
+
+        const videoId = "dUh1DSIsUOY";
+     
+        const ytma = new YtmClient(cookie, user);
+        const song = await ytma.getSong(videoId);
+        console.log(JSON.stringify(song, null, 2));
+}
+
+run();
+```
+
+Note, you technically only need the `__Secure-3PSID` and `__Secure-3PAPISI` cookie values, but it is 
+safe to paste the entire string into the `cookie` variable.
+
 References:
 
 [Code Beautify](https://codebeautify.org/jsonviewer) helped me interpret the data that YouTube Music returns.
