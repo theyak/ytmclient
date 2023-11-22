@@ -30,13 +30,13 @@ export default class Browsing {
 		}
 
 		const body = {
-            playbackContext: {
+			playbackContext: {
 				contentPlaybackContext: {
 					signatureTimestamp,
 				},
 			},
 			video_id: videoId,
-        };
+		};
 
 		const response = await this.client.sendAuthorizedRequest("player", body);
 
