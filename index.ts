@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
-import axios from "axios";
+import { HeadersInit } from "node-fetch";
+import fetch from 'node-fetch';
 import Library from "./src/library";
 import Playlist from "./src/playlist";
 import Browsing from "./src/browsing";
@@ -11,6 +12,15 @@ export const YTM_DOMAIN = "https://music.youtube.com";
 export const YTM_BASE_API = "https://music.youtube.com/youtubei/v1/";
 export const YTM_QUERY_PARAMS = "?alt=json&key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30"
 export const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0";
+
+type OAuthToken = {
+	access_token: string;
+	expires_in: number;
+	token_type: string;
+	scope: string;
+	refresh_token: string;
+	expiresAt: number;
+};
 
 export function getContext(): any {
 	return {
@@ -52,6 +62,7 @@ export function getCookies(cookiesStr: string): Record<string, string> {
 }
 
 export class YtmClient {
+	oauth: OAuthToken|null = null;
 	cookies:string = "";
 	sapiSid:string|null = null;
 	user:string;
@@ -60,44 +71,83 @@ export class YtmClient {
 	library:Library;
 	browsing:Browsing;
 
-	constructor(cookies: string, user: string = "0") {
-		const c = getCookies(cookies);
-		this.sapiSid = c["__Secure-3PAPISID"] || null;
-		this.cookies = cookies;
+	constructor(cookies: string | OAuthToken, user: string = "0") {
+		if (typeof cookies === "object" && cookies.access_token) {
+			this.oauth = cookies;
+		} else {
+			const c = getCookies(cookies as string);
+			this.sapiSid = c["__Secure-3PAPISID"] || null;
+			this.cookies = cookies as string;
+		}
 		this.playlist = new Playlist(this);
 		this.library = new Library(this);
 		this.browsing = new Browsing(this);
 		this.user = user;
 	}
 
+
 	async sendAuthorizedRequest(endpoint: string, body: Record<string, any>, additional:string = ""): Promise<any> {
-		const headers = this.getHeaders();
+		const headers = this.oauth ? this.getOauthHeaders() : this.getHeaders();
 		const url = `${YTM_BASE_API}${endpoint}${YTM_QUERY_PARAMS}&${additional}`;
 		const reqBody = JSON.stringify({...body, ...getContext()});
 
-		const response = await axios.post(
-			url,
-			reqBody,
-			{
-				headers,
-			}
-		);
-		return response.data;
+		const response = await fetch(url, {
+			method: "post",
+			body: reqBody,
+			headers: headers as HeadersInit,
+		});
+		const data: any = await response.json();
+
+		if (data.error) {
+			throw data.error.message;
+		}
+
+		return data;
 	}
 
 	getHeaders(): Record<string, string> {
 		return {
 			Origin: this.origin,
-			'User-Agent': USER_AGENT,
-			Accept: '*/*',
-			'Accept-Language': 'en-US,en;q=0.5',
-			'Content-Type': 'application/json',
-			'X-Goog-AuthUser': this.user,
-			'x-origin': this.origin,
+			"User-Agent": USER_AGENT,
+			Accept: "*/*",
+			"Accept-Language": "en-US,en;q=0.5",
+			"Content-Type": "application/json",
+			"X-Goog-AuthUser": this.user,
+			"x-origin": this.origin,
 			cookie: this.cookies,
 			authorization: this.sapiSid ? getAuthorization(this.sapiSid, this.origin) : "",
 		};
 	}
+
+    /**
+     * Load headers from a token.
+     *
+     * @param object $token
+     * @param string $filepath
+     * @return array
+     */
+    getOauthHeaders(): Record<string, string|number> {
+        const headers: Record<string, string|number> = {
+            "user-agent": USER_AGENT,
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "content-type": "application/json",
+            "content-encoding": "gzip",
+            "origin": YTM_DOMAIN,
+            "X-Goog-Request-Time": Math.floor(Date.now() / 1000),
+		};
+
+		// Avoid this for now. Maybe do check in this library's client.
+        if (Date.now() > this.oauth.expiresAt - 3600) {
+			// TODO: Make a server call to refresh the token
+			// fetch("refresh-token", this.oauth.refresh_token);
+			// this.token = [...this.token, ...this.refresh_token(this.token.refresh_token)]
+        }
+
+		headers.authorization = this.oauth.token_type + " " + this.oauth.access_token;
+
+        return headers;
+    }
 
 	/**
 	 * Retrieves the playlists in the user's library.
