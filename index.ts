@@ -97,7 +97,6 @@ export class YtmClient {
 			headers: headers as HeadersInit,
 		});
 		const data: any = await response.json();
-
 		if (data.error) {
 			throw data.error.message;
 		}
@@ -119,35 +118,35 @@ export class YtmClient {
 		};
 	}
 
-    /**
-     * Load headers from a token.
-     *
-     * @param object $token
-     * @param string $filepath
-     * @return array
-     */
-    getOauthHeaders(): Record<string, string|number> {
-        const headers: Record<string, string|number> = {
-            "user-agent": USER_AGENT,
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "content-type": "application/json",
-            "content-encoding": "gzip",
-            "origin": YTM_DOMAIN,
-            "X-Goog-Request-Time": Math.floor(Date.now() / 1000),
+	/**
+	 * Load headers from a token.
+	 *
+	 * @param object $token
+	 * @param string $filepath
+	 * @return array
+	 */
+	getOauthHeaders(): Record<string, string|number> {
+		const headers: Record<string, string|number> = {
+			"user-agent": USER_AGENT,
+			"accept": "*/*",
+			"accept-encoding": "gzip, deflate",
+			"content-type": "application/json",
+			"content-encoding": "gzip",
+			"origin": YTM_DOMAIN,
+			"X-Goog-Request-Time": Math.floor(Date.now() / 1000),
 		};
 
 		// Avoid this for now. Maybe do check in this library's client.
-        if (Date.now() > this.oauth.expiresAt - 3600) {
+		if (Date.now() > this.oauth!.expiresAt - 3600) {
 			// TODO: Make a server call to refresh the token
 			// fetch("refresh-token", this.oauth.refresh_token);
 			// this.token = [...this.token, ...this.refresh_token(this.token.refresh_token)]
-        }
+		}
 
-		headers.authorization = this.oauth.token_type + " " + this.oauth.access_token;
+		headers.authorization = this.oauth!.token_type + " " + this.oauth!.access_token;
 
-        return headers;
-    }
+		return headers;
+	}
 
 	/**
 	 * Retrieves the playlists in the user's library.
