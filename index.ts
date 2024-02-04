@@ -98,7 +98,7 @@ export class YtmClient {
 		});
 		const data: any = await response.json();
 		if (data.error) {
-			throw data.error.message;
+			throw new Error(JSON.stringify(data.error));
 		}
 
 		return data;
