@@ -72,12 +72,14 @@ export class YtmClient {
 	browsing:Browsing;
 
 	constructor(cookies: string | OAuthToken, user: string = "0") {
-		if (typeof cookies === "object" && cookies.access_token) {
-			this.oauth = cookies;
-		} else {
-			const c = getCookies(cookies as string);
-			this.sapiSid = c["__Secure-3PAPISID"] || null;
-			this.cookies = cookies as string;
+		if (cookies) {
+			if (typeof cookies === "object" && cookies.access_token) {
+				this.oauth = cookies;
+			} else {
+				const c = getCookies(cookies as string);
+				this.sapiSid = c["__Secure-3PAPISID"] || null;
+				this.cookies = cookies as string;
+			}
 		}
 		this.playlist = new Playlist(this);
 		this.library = new Library(this);
@@ -169,11 +171,9 @@ export class YtmClient {
 	 *
 	 * @param id ID of playlist
 	 * @param limit How many songs to return. 0 retrieves them all. Default: all
-	 * @param related Whether to fetch 10 related playlists or not. Default: false (Not implemented)
-	 * @param suggestionsLimit  How many suggestions to return. Default 0 (Not implemented)
 	 * @returns
 	 */
-	async getPlaylist(id: string, limit: number = 0, related: boolean = false, suggestionsLimit: number = 0): Promise<any> {
+	async getPlaylist(id: string, limit: number = 0): Promise<any> {
 		const playlist = await this.playlist.getTracks(id);
 
 		// YouTube actually limits playlist lengths to 5,000, but we'll make it bigger.

@@ -29,7 +29,7 @@ export default class Playlist {
 
 		const response = await this.client.sendAuthorizedRequest("browse", body);
 
-		const tracksObj: any[] = nav(response, `
+		let tracksObj: any[] = nav(response, `
 			contents.
 			singleColumnBrowseResultsRenderer.
 			tabs.0.
@@ -39,10 +39,30 @@ export default class Playlist {
 			contents.0.
 			musicPlaylistShelfRenderer.
 			contents
-		`);
+		`, null);
 
-		const meta = this.parsePlaylistResponse(browseId, response);
-		const tracks = this.parseTrackResponse(tracksObj);
+		let meta;
+		let tracks = [];
+		if (tracksObj) {
+			meta = this.parsePlaylistResponse(browseId, response);
+			tracks = this.parseTrackResponse(tracksObj);
+		} else {
+			// May/June 2024 format
+			tracksObj = nav(response, `
+				contents.
+				twoColumnBrowseResultsRenderer.
+				secondaryContents.
+				sectionListRenderer.
+				contents.0.
+				musicPlaylistShelfRenderer.
+				contents
+			`, null);
+
+			meta = this.parsePlaylistResponse2024(browseId, response);
+			if (tracksObj) {
+				tracks = this.parseTrackResponse(tracksObj);
+			}
+		}
 
 		return {
 			...meta,
@@ -190,6 +210,99 @@ export default class Playlist {
 		return false;
 	}
 
+	parsePlaylistResponse2024(id: string, response: any): any {
+
+		const headerData = nav(response, `
+			contents.
+			twoColumnBrowseResultsRenderer.
+			tabs.
+			0.
+			tabRenderer.
+			content.
+			sectionListRenderer.
+			contents.
+			0
+		`);
+
+		const sectionList = nav(response, `
+			contents.
+			twoColumnBrowseResultsRenderer.
+			secondaryContents.
+			sectionListRenderer
+		`);
+
+		const editableRenderer = nav(headerData, "musicEditablePlaylistDetailHeaderRenderer");
+		const responsiveRenderer = nav(headerData, "musicResponsiveHeaderRenderer");
+
+		const playlist: any = {
+			id: null,
+			title: null,
+			author: null,
+			owned: nav(editableRenderer, "editHeader", false),
+			privacy: null,
+			thumbnails: [],
+			description: null,
+			views: null,
+			duration: null,
+			trackCount: null,
+		};
+
+		let header;
+		if (!playlist.owned) {
+			header = responsiveRenderer;
+			playlist.id = nav(header, "buttons.1.musicPlayButtonRenderer.playNavigationEndpoint.watchEndpoint.playlistId", null);
+			playlist.privacy = "PUBLIC";
+		} else {
+			header = nav(responsiveRenderer, "header.musicResponsiveHeaderRenderer");
+			playlist.id = nav(editableRenderer, "playlistId", null);
+			playlist.privacy = nav(responsiveRenderer, "editHeader.musicPlaylistEditHeaderRenderer.privacy", null);
+		}
+
+		playlist.title = nav(header, "title.runs.0.text", "");
+		playlist.thumbnails = nav(responsiveRenderer, "thumbnail.musicThumbnailRenderer.thumbnail.thumbnails", []);
+
+		const author = nav(responsiveRenderer, "straplineTextOne.runs.0", null);
+		if (author) {
+			playlist.author = {
+				name: author.text,
+				id: nav(author, "navigationEndpoint.browseEndpoint.browseId", null),
+			}
+		}
+
+		playlist.description = null;
+		const descriptionShelf = nav(header, "description.musicDescriptionShelfRenderer", null);
+		if (descriptionShelf) {
+			const runs: any[] = nav(descriptionShelf, "description.runs");
+			const texts = runs.map((run) => run.text);
+			playlist.description = texts.join("");
+		}
+
+		playlist.views = null;
+		playlist.duration = null;
+
+        if (nav(header, "secondSubtitle.runs")) {
+			const secondSubtitleRuns = nav(header, "secondSubtitle.runs");
+			const hasViews = secondSubtitleRuns.length > 3 ? 2 : 0;
+			const hasDuration = secondSubtitleRuns.length > 1 ? 2 : 0;
+			const songCount = secondSubtitleRuns[hasViews].text.split(" ");
+			playlist.views = hasViews ? secondSubtitleRuns[0].text : null;
+			playlist.duration = hasDuration ? secondSubtitleRuns[hasViews + hasDuration].text : null;
+			playlist.trackCount = songCount.length > 1 ? songCount[0] : 0;
+		} else {
+			playlist.trackCount = sectionList.contents.length;
+		}
+
+		playlist.continuation = nav(sectionList, `
+			contents.0.
+			musicPlaylistShelfRenderer.
+			continuations.0.
+			nextContinuationData.
+			continuation
+		`, null);
+
+		return playlist;
+	}
+
 	parsePlaylistResponse(id: string, response: any): any {
 
 		const isOwnPlaylist = !!nav(response, "header.musicEditablePlaylistDetailHeaderRenderer");
@@ -241,7 +354,7 @@ export default class Playlist {
 			continuations.0.
 			nextContinuationData.
 			continuation
-		`);
+		`, null);
 
 		const meta = {
 			id,
