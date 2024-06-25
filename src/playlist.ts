@@ -238,7 +238,7 @@ export default class Playlist {
 			id: null,
 			title: null,
 			author: null,
-			owned: nav(editableRenderer, "editHeader", false),
+			owned: !!editableRenderer.editHeader,
 			privacy: null,
 			thumbnails: [],
 			description: null,
@@ -253,15 +253,16 @@ export default class Playlist {
 			playlist.id = nav(header, "buttons.1.musicPlayButtonRenderer.playNavigationEndpoint.watchEndpoint.playlistId", null);
 			playlist.privacy = "PUBLIC";
 		} else {
-			header = nav(responsiveRenderer, "header.musicResponsiveHeaderRenderer");
+			header = nav(editableRenderer, "header.musicResponsiveHeaderRenderer");
 			playlist.id = nav(editableRenderer, "playlistId", null);
-			playlist.privacy = nav(responsiveRenderer, "editHeader.musicPlaylistEditHeaderRenderer.privacy", null);
+			playlist.privacy = nav(editableRenderer, "editHeader.musicPlaylistEditHeaderRenderer.privacy", null);
 		}
 
 		playlist.title = nav(header, "title.runs.0.text", "");
-		playlist.thumbnails = nav(responsiveRenderer, "thumbnail.musicThumbnailRenderer.thumbnail.thumbnails", []);
+		playlist.thumbnails = nav(header, "thumbnail.musicThumbnailRenderer.thumbnail.thumbnails", []);
 
-		const author = nav(responsiveRenderer, "straplineTextOne.runs.0", null);
+		// const author = nav(header, "straplineTextOne.runs.0", null);
+		const author = nav(header, "straplineTextOne.runs.0", null);
 		if (author) {
 			playlist.author = {
 				name: author.text,

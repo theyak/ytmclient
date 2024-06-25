@@ -71,7 +71,7 @@ export class YtmClient {
 	library:Library;
 	browsing:Browsing;
 
-	constructor(cookies: string | OAuthToken, user: string = "0") {
+	constructor(cookies: string | OAuthToken | null = null, user: string = "0") {
 		if (cookies) {
 			if (typeof cookies === "object" && cookies.access_token) {
 				this.oauth = cookies;
@@ -107,7 +107,7 @@ export class YtmClient {
 	}
 
 	getHeaders(): Record<string, string> {
-		return {
+		const header: Record<string, string> = {
 			Origin: this.origin,
 			"User-Agent": USER_AGENT,
 			Accept: "*/*",
@@ -115,9 +115,12 @@ export class YtmClient {
 			"Content-Type": "application/json",
 			"X-Goog-AuthUser": this.user,
 			"x-origin": this.origin,
-			cookie: this.cookies,
 			authorization: this.sapiSid ? getAuthorization(this.sapiSid, this.origin) : "",
 		};
+		if (this.cookies) {
+			header.cookie = this.cookies;
+		}
+		return header;
 	}
 
 	/**
