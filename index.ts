@@ -170,6 +170,13 @@ export class YtmClient {
 	}
 
 	/**
+	 * Get information about logged in account
+	 */
+	async getAccount(): Promise<Object> {
+		return await this.browsing.getAccount();
+	}
+
+	/**
 	 * Returns a list of playlist items
 	 *
 	 * @param id ID of playlist

@@ -12,6 +12,32 @@ export default class Browsing {
 		this.client = client;
 	}
 
+    /**
+     * Get information about the authorized account.
+     */
+	async getAccount(): Promise<Object>
+	{
+		const body = {}
+		const response = await this.client.sendAuthorizedRequest("account/account_menu", body);
+		const renderer = nav(response, "actions.0.openPopupAction.popup.multiPageMenuRenderer");
+		const header = nav(renderer, "header.activeAccountHeaderRenderer");
+		const sections = nav(renderer, "sections.0.multiPageMenuSectionRenderer");
+
+		const accountName = nav(header, "accountName.runs.0.text", null);
+		const thumbnails = nav(header, "accountPhoto.thumbnails", []);
+		const channelHandle = nav(header, "channelHandle.runs.0.text", null);
+		const channelId = nav(sections, "items.0.compactLinkRenderer.navigationEndpoint.browseEndpoint.browseId", null);
+		const isPremium = nav(sections, "items.1.compactLinkRenderer.icon.iconType", null) === "MONETIZATION_ON";
+
+		return {
+			accountName,
+			channelHandle,
+			channelId,
+			thumbnails,
+			isPremium
+		};
+	}
+
 	/**
 	 * Returns metadata and streaming information about a song or video.
 	 *
