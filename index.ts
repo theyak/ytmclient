@@ -11,7 +11,7 @@ export const BUILD = "20230721190400";
 export const YTM_DOMAIN = "https://music.youtube.com";
 export const YTM_BASE_API = "https://music.youtube.com/youtubei/v1/";
 export const YTM_QUERY_PARAMS = "?alt=json&key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30"
-export const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0";
+export const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/119.0";
 
 type OAuthToken = {
 	access_token: string;
@@ -27,7 +27,7 @@ export function getContext(): any {
 		context: {
 			client: {
 				clientName: "WEB_REMIX",
-				clientVersion: "0.1",
+				clientVersion: "1.20240925.01.00",
 				hl: "en",
 			},
 			user: {},
