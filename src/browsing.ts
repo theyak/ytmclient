@@ -12,9 +12,9 @@ export default class Browsing {
 		this.client = client;
 	}
 
-    /**
-     * Get information about the authorized account.
-     */
+	/**
+	 * Get information about the authorized account.
+	 */
 	async getAccount(): Promise<Object>
 	{
 		const body = {}
