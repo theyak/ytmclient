@@ -29,6 +29,7 @@ export function getContext(): any {
 				clientName: "WEB_REMIX",
 				clientVersion: "0.1",
 				hl: "en",
+				gl: "GB",
 			},
 			user: {},
 		}
