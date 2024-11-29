@@ -1,9 +1,5 @@
 import { YtmClient } from "..";
-import { Playlist as PlaylistDTO, Track, Album, Artist, LikeStatus } from "./types";
-import { parseDuration, nav } from "./utils";
-import * as util from "util";
-import * as fs from "fs";
-import logger from "./logger";
+import { nav } from "./utils";
 
 export default class Browsing {
 	client: YtmClient;

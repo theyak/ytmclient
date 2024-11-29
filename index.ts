@@ -1,10 +1,10 @@
 import { createHash } from "crypto";
-import { HeadersInit } from "node-fetch";
+import type { HeadersInit } from "node-fetch";
 import fetch from 'node-fetch';
 import Library from "./src/library";
 import Playlist from "./src/playlist";
 import Browsing from "./src/browsing";
-import { PlaylistItem, Track } from "./src/types";
+import type { PlaylistItem } from "./src/types";
 
 export const VERSION = "0.0.3";
 export const BUILD = "20230721190400";
