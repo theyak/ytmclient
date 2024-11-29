@@ -1,5 +1,5 @@
 import { YtmClient } from "..";
-import { PlaylistItem } from "./types";
+import type { PlaylistItem } from "./types";
 import { nav } from "./utils";
 export default class Library {
 	client: YtmClient;
